@@ -1,0 +1,27 @@
+api = "0.5"
+
+[buildpack]
+  id = "making/opentelemetry-javaagent"
+  version = "0.1.0"
+
+[[stacks]]
+  id = "io.buildpacks.stacks.bionic"
+
+[[stacks]]
+  id = "io.paketo.stacks.tiny"
+
+[[stacks]]
+  id = "*"
+
+[metadata]
+  [[metadata.dependencies]]
+    id = "opentelemetry-javaagent"
+    name = "OpenTelemetry Java Agent"
+    sha256 = "10e1809d8b1ed8460161a582e976172da03d78833abeeb9839a7969f0b0dcc2a"
+    stacks = ["io.buildpacks.stacks.bionic", "io.paketo.stacks.tiny", "*"]
+    uri = "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v1.7.0/opentelemetry-javaagent.jar"
+    version = "1.7.0"
+
+    [[metadata.dependencies.licenses]]
+      type = "Apache-2.0"
+      uri = "https://github.com/open-telemetry/opentelemetry-java-instrumentation/raw/main/LICENSE"

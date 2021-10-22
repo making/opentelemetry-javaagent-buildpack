@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# https://github.com/starkandwayne/redis-cnb/blob/master/bin/vendor-assets
+# Run this script to download all [[metadata.dependencies]] into vendor/
+# Used prior to adding buildpack into a Builder image to be entirely offline
+
+set -eu
+
+buildpack_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+vendor_dir="${buildpack_dir}/vendor"
+dependencies=$(cat $buildpack_dir/buildpack.toml | yj -t | jq -r '.metadata.dependencies')
+
+mkdir -p ${vendor_dir}
+
+for row in $(echo "${dependencies}" | jq -r '.[] | @base64'); do
+  _jq() {
+    echo ${row} | base64 --decode | jq -r ${1}
+  }
+
+  filename=$(basename $(_jq '.uri'))
+  url=$(_jq '.uri')
+  sha256=$(_jq '.sha256')
+  echo "$sha256  $vendor_dir/$filename" | shasum -a 256 -c --status || {
+    echo "Fetching $url"
+    rm -rf $vendor_dir/$filename
+    curl -L -s -o $vendor_dir/$filename $url
+  }
+  echo "$sha256  $vendor_dir/$filename" | shasum -a 256 -c
+done

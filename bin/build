@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+green=`tput -T xterm setaf 2`
+yellow=`tput -T xterm setaf 3`
+blue=`tput -T xterm setaf 4`
+bold=`tput -T xterm bold`
+italic=`tput -T xterm sitm`
+dim=`tput -T xterm dim`
+reset=`tput -T xterm sgr0`
+
+layers_dir="$1"
+env_dir="$2/env"
+plan_path="$3"
+buildpack_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+vendor_dir=${buildpack_dir}/vendor
+
+buildpack_version=$(cat ${buildpack_dir}/buildpack.toml | grep version | head -1 | tr -d '"' | tr -d ' ' | awk -F '=' '{print $2}')
+agent_version=$(cat ${buildpack_dir}/buildpack.toml | grep version | tail -1 | tr -d '"' | tr -d ' ' | awk -F '=' '{print $2}')
+agent_uri=$(cat ${buildpack_dir}/buildpack.toml | grep uri | head -1 | tr -d '"' | tr -d ' ' | awk -F '=' '{print $2}')
+agent_sha256=$(cat ${buildpack_dir}/buildpack.toml | grep sha256 | head -1 | tr -d '"' | tr -d ' ' | awk -F '=' '{print $2}')
+
+echo "${blue}${bold}OpenTelemetry Java Agent Buildpack${reset} ${blue}${buildpack_version}${reset}"
+echo "  ${blue}${italic}${dim}https://github.com/making/opentelemetry-javaagent-buildpack${reset}"
+opentelemetry_javaagent_layer=${layers_dir}/opentelemetry-javaagent
+mkdir -p ${opentelemetry_javaagent_layer}/env.launch
+local_sha256=$(sha256sum ${vendor_dir}/opentelemetry-javaagent.jar | cut -d ' ' -f 1 || echo 'not found')
+remote_sha256=$(cat "${opentelemetry_javaagent_layer}.toml" 2>/dev/null | grep checksum  | tr -d '"' | tr -d ' ' | awk -F '=' '{print $2}' || echo 'not found')
+echo -n "  ${blue}OpenTelemetry Java Agent ${agent_version}${reset}: "
+if [[ "${local_sha256}" == "${remote_sha256}" ]] ; then
+  echo "${green}Resuing${reset} cached layer"
+else
+  echo "${yellow}Contributing${reset} to layer"
+  echo "    ${yellow}${dim}Downloading${reset} ${dim}from ${agent_uri}${reset}"
+  # offline buildpack actually ;)
+  echo "    ${dim}Verifying checksum${reset}"
+  sha256sum --check --status <(echo -n "${agent_sha256} ${vendor_dir}/opentelemetry-javaagent.jar")
+  echo "    ${dim}Copying to ${opentelemetry_javaagent_layer}${reset}"
+  cp ${vendor_dir}/opentelemetry-javaagent.jar ${opentelemetry_javaagent_layer}
+  echo "    ${dim}Writing env.launch/JAVA_TOOL_OPTIONS.append${reset}"  
+  echo -n "-javaagent:${opentelemetry_javaagent_layer}/opentelemetry-javaagent.jar" > ${opentelemetry_javaagent_layer}/env.launch/JAVA_TOOL_OPTIONS.append  
+  echo "    ${dim}Writing env.launch/JAVA_TOOL_OPTIONS.delim${reset}"  
+  echo -n " " > ${opentelemetry_javaagent_layer}/env.launch/JAVA_TOOL_OPTIONS.delim
+fi
+
+cat <<EOF > ${opentelemetry_javaagent_layer}.toml
+cache = true
+launch = true
+
+[metadata]
+checksum = "${local_sha256}"
+EOF
+
+cat <<EOF > ${layers_dir}/launch.toml
+[[bom]]
+name = "opentelemetry-javaagent"
+[bom.metadata]
+name = "OpenTelemetry Java Agent"
+sha256 = "${agent_sha256}"
+stacks = ["io.buildpacks.stacks.bionic", "io.paketo.stacks.tiny", "*"]
+uri = "${agent_uri}"
+version = "${agent_version}"
+[[bom.metadata.licenses]]
+type = "Apache-2.0"
+uri = "https://github.com/open-telemetry/opentelemetry-java-instrumentation/raw/main/LICENSE"
+EOF

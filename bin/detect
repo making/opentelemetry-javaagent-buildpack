@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -eo pipefail
+if [ -v BP_DISABLE_OTEL_JAVAAGENT ];then
+  exit 100
+fi
+
+plan=$2
+
+cat <<EOF > "$plan"
+[[requires]]
+  name = "jvm-application"
+EOF
