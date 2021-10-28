@@ -2,7 +2,7 @@ api = "0.5"
 
 [buildpack]
   id = "making/opentelemetry-javaagent"
-  version = "0.1.0"
+  version = "0.1.1"
 
 [[stacks]]
   id = "io.buildpacks.stacks.bionic"
