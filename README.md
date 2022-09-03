@@ -1,5 +1,9 @@
 # `ghcr.io/making/buildpacks/opentelemetry-javaagent`
 
+⚠️ This project is no longer maintained.<br>
+**Use https://github.com/paketo-buildpacks/opentelemetry instead**
+
+
 The OpenTelemetry Java Agent Buildpack is a Cloud Native Buildpack that contributes the OpenTelemetry Java Agent.
 
 ## Behavior
