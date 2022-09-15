@@ -12,7 +12,7 @@ This buildpack will participate if all the following conditions are met
 
 
 * the build plan contains `jvm-application`
-* `$BP_DISABLE_OTEL_JAVAAGENT` is not set
+* The `$BP_OPENTELEMETRY_ENABLED` is set to `true` (**the breaking change since 0.2.0**)
 
 The buildpack will do the following:
 
@@ -28,6 +28,7 @@ See [the configuration documentation](https://github.com/open-telemetry/opentele
 git clone https://github.com/making/hello-servlet.git
 pack build hello-servlet \
   --path hello-servlet \
+  -e BP_OPENTELEMETRY_ENABLED=true \
   --buildpack paketo-buildpacks/java \
   --buildpack ghcr.io/making/buildpacks/opentelemetry-javaagent \
   --builder paketobuildpacks/builder:base
